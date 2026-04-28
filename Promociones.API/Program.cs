@@ -1,5 +1,6 @@
 using Promociones.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Promociones.API.Endpoints;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,14 +37,20 @@ using (var scope = app.Services.CreateScope())
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Promociones API v1"));
+    app.UseSwaggerUI(c =>
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Promociones API v1"));
 }
 
 app.UseHttpsRedirection();
 
 // Endpoints
-app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "Promociones.API" }))
-   .WithTags("Health")
-   .WithSummary("Verificar estado del servicio");
+app.MapGet("/health", () => Results.Ok(new
+{
+    status = "healthy",
+    service = "Promociones.API",
+    timestamp = DateTime.UtcNow
+})).WithTags("Health");
+
+app.MapPromocionesEndpoints();
 
 app.Run();
