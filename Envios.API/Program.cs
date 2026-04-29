@@ -1,18 +1,20 @@
 using Envios.Infrastructure;
-using Microsoft.EntityFrameworkCore;
 using Envios.API.Endpoints;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Base de datos
 builder.Services.AddDbContext<EnviosDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("EnviosDB"),
         npgsql => npgsql.MigrationsAssembly("Envios.Infrastructure")
     )
+    .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning))
 );
 
-// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -26,14 +28,12 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// Migraciones automáticas al iniciar
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<EnviosDbContext>();
     db.Database.Migrate();
 }
 
-// Middleware
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -43,7 +43,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Endpoints
 app.MapGet("/health", () => Results.Ok(new
 {
     status = "healthy",
