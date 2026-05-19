@@ -2,6 +2,7 @@ version: '3.8'
 
 services:
 
+  # BASES DE DATOS
   envios-db:
     image: postgres:17
     container_name: envios-db
@@ -18,6 +19,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - envios-network
 
   promociones-db:
     image: postgres:17
@@ -35,6 +38,48 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - promociones-network
+
+  # MICROSERVICIOS
+  envios-api:
+    build:
+      context: .
+      dockerfile: Envios.API/Dockerfile
+    container_name: envios-api
+    ports:
+      - "5001:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__EnviosDB=Host=envios-db;Port=5432;Database=EnviosDB;Username=postgres;Password=admin
+    depends_on:
+      envios-db:
+        condition: service_healthy
+    networks:
+      - envios-network
+
+  promociones-api:
+    build:
+      context: .
+      dockerfile: Promociones.API/Dockerfile
+    container_name: promociones-api
+    ports:
+      - "5002:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__PromocionesDB=Host=promociones-db;Port=5432;Database=PromocionesDB;Username=postgres;Password=admin
+    depends_on:
+      promociones-db:
+        condition: service_healthy
+    networks:
+      - promociones-network
+
+# REDES Y VOLÚMENES
+networks:
+  envios-network:
+    driver: bridge
+  promociones-network:
+    driver: bridge
 
 volumes:
   envios-data:
